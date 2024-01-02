@@ -15,17 +15,20 @@ def is_valid_ticker(ticker):
 
 st.title('Stock Data App')
 
-# User enters a ticker symbol
-ticker = st.text_input('Enter a ticker symbol (e.g. AAPL):')
+# User enters a list of ticker symbols, separated by commas
+tickers = st.text_input('Enter ticker symbols (e.g. AAPL,MSFT), separated by commas:')
 
 start_date = st.date_input('Start date')
 end_date = st.date_input('End date')
 
-if ticker and st.button('Fetch Data'):
-    if end_date == date.today():
-        st.warning('Today\'s data may not be available yet.')
-    elif is_valid_ticker(ticker):
-        data = load_data(ticker, start_date, end_date)
-        st.dataframe(data)  # Display data as a table
-    else:
-        st.error('Invalid ticker symbol. Please enter a valid ticker symbol.')
+if tickers and st.button('Fetch Data'):
+    tickers = [ticker.strip() for ticker in tickers.split(',')]
+    for ticker in tickers:
+        if end_date == date.today():
+            st.warning('Today\'s data for {} may not be available yet.'.format(ticker))
+        elif is_valid_ticker(ticker):
+            data = load_data(ticker, start_date, end_date)
+            st.write('Data for {}:'.format(ticker))
+            st.dataframe(data)  # Display data as a table
+        else:
+            st.error('Invalid ticker symbol: {}. Please enter a valid ticker symbol.'.format(ticker))
