@@ -8,11 +8,15 @@ def load_data(ticker, start_date, end_date):
 
 st.title('Stock Data App')
 
-ticker = st.text_input('Enter a stock symbol (e.g. AAPL):', value='AAPL')
+# User enters a ticker symbol
+ticker = st.text_input('Enter a ticker symbol (e.g. AAPL):')
 
 start_date = st.date_input('Start date')
 end_date = st.date_input('End date')
 
-if st.button('Fetch Data'):
-    data = load_data(ticker, start_date, end_date)
-    st.dataframe(data)  # Display data as a table
+if ticker and st.button('Fetch Data'):
+    try:
+        data = load_data(ticker, start_date, end_date)
+        st.dataframe(data)  # Display data as a table
+    except Exception as e:
+        st.error('Failed to fetch data. Please make sure the ticker symbol is correct.')
