@@ -1,5 +1,4 @@
 import streamlit as st
-import SessionState  # Make sure to have SessionState.py in your working directory
 import yfinance as yf
 import pandas as pd
 import plotly.express as px
@@ -35,12 +34,7 @@ tickers = st.text_input('Enter ticker symbols (e.g. AAPL,MSFT), separated by com
 start_date = st.date_input('Start date')
 end_date = st.date_input('End date')
 
-session_state = SessionState.get(fetch_data=False)
-
-if st.button('Fetch Data'):
-    session_state.fetch_data = True
-
-if session_state.fetch_data:
+if tickers and st.button('Fetch Data'):
     tickers = [ticker.strip() for ticker in tickers.split(',')]
     for ticker in tickers:
         if end_date == date.today():
