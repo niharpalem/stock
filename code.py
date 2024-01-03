@@ -5,6 +5,7 @@ from datetime import date
 
 def load_data(ticker, start_date, end_date):
     data = yf.download(ticker, start=start_date, end=end_date)
+    data['label']=ticker
     return data
 
 def is_valid_ticker(ticker):
