@@ -15,6 +15,17 @@ def is_valid_ticker(ticker):
     # If the data is empty, the ticker is probably invalid
     return not data.empty
 
+def create_custom_plot(data, ticker):
+    # Custom Plot
+    if st.checkbox('Create a custom plot for {}'.format(ticker)):
+        plot_types = ['scatter', 'line', 'area', 'bar', 'box', 'histogram']
+        plot_type = st.selectbox('Select plot type', plot_types)
+        x_var = st.selectbox('Select x variable', data.columns)
+        y_var = st.selectbox('Select y variable', data.columns)
+        color = st.color_picker('Pick a color for your plot')
+        fig = px.__dict__[plot_type](data, x=x_var, y=y_var, color_discrete_sequence=[color])
+        st.plotly_chart(fig)
+
 st.title('Stock Data App')
 
 # User enters a list of ticker symbols, separated by commas
@@ -32,15 +43,6 @@ if tickers and st.button('Fetch Data'):
             data = load_data(ticker, start_date, end_date)
             st.write('Data for {}:'.format(ticker))
             st.dataframe(data)  # Display data as a table
-
-            # Custom Plot
-            if st.checkbox('Create a custom plot for {}'.format(ticker)):
-                plot_types = ['scatter', 'line', 'area', 'bar', 'box', 'histogram']
-                plot_type = st.selectbox('Select plot type', plot_types)
-                x_var = st.selectbox('Select x variable', data.columns)
-                y_var = st.selectbox('Select y variable', data.columns)
-                color = st.color_picker('Pick a color for your plot')
-                fig = px.__dict__[plot_type](data, x=x_var, y=y_var, color_discrete_sequence=[color])
-                st.plotly_chart(fig)
+            create_custom_plot(data, ticker)
         else:
             st.error('Invalid ticker symbol: {}. Please enter a valid ticker symbol.'.format(ticker))
