@@ -24,6 +24,10 @@ end_date = st.date_input('End date')
 
 formulas = st.multiselect('Select formulas to apply', ['Daily Return', 'Moving Average', 'Volatility', 'Exponential Moving Average', 'MACD', 'RSI'])
 
+# Add options to select the time period for Moving Average and Volatility
+ma_period = st.sidebar.slider('Moving Average Period', min_value=1, max_value=30, value=5, step=1)
+vol_period = st.sidebar.slider('Volatility Period', min_value=1, max_value=30, value=5, step=1)
+
 if tickers and st.button('Fetch Data'):
     tickers = [ticker.strip() for ticker in tickers.split(',')]
     for ticker in tickers:
@@ -35,9 +39,9 @@ if tickers and st.button('Fetch Data'):
             if 'Daily Return' in formulas:
                 data['Daily Return'] = (data['Close'] / data['Close'].shift(1)) - 1
             if 'Moving Average' in formulas:
-                data['Moving Average'] = data['Close'].rolling(window=5).mean()
+                data['Moving Average'] = data['Close'].rolling(window=ma_period).mean()
             if 'Volatility' in formulas:
-                data['Volatility'] = data['Daily Return'].rolling(window=5).std()
+                data['Volatility'] = data['Daily Return'].rolling(window=vol_period).std()
             if 'Exponential Moving Average' in formulas:
                 data['EMA'] = data['Close'].ewm(span=20, adjust=False).mean()
             if 'MACD' in formulas:
