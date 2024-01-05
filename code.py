@@ -48,19 +48,22 @@ if tickers and st.button('Fetch Data'):
             for formula in formulas:
                 if formula == 'Daily Return':
                     data['Daily Return'] = (data['Close'] / data['Close'].shift(1)) - 1
-                elif formula == 'Moving Average':
-                    data['Moving Average'] = data['Close'].rolling(window=ma_period).mean()
-                elif formula == 'Volatility':
+                if formula == 'Volatility':
+                    # Ensure 'Daily Return' is calculated before 'Volatility'
+                    if 'Daily Return' not in data.columns:
+                        data['Daily Return'] = (data['Close'] / data['Close'].shift(1)) - 1
                     data['Volatility'] = data['Daily Return'].rolling(window=vol_period).std()
-                elif formula == 'Exponential Moving Average':
+                if formula == 'Moving Average':
+                    data['Moving Average'] = data['Close'].rolling(window=ma_period).mean()
+                if formula == 'Exponential Moving Average':
                     data['EMA'] = data['Close'].ewm(span=20, adjust=False).mean()
-                elif formula == 'MACD':
+                if formula == 'MACD':
                     exp1 = data['Close'].ewm(span=12, adjust=False).mean()
                     exp2 = data['Close'].ewm(span=26, adjust=False).mean()
                     macd = exp1-exp2
                     signal = macd.ewm(span=9, adjust=False).mean()
                     data['MACD'] = macd - signal
-                elif formula == 'RSI':
+                if formula == 'RSI':
                     delta = data['Close'].diff()
                     up = delta.clip(lower=0)
                     down = -1*delta.clip(upper=0)
