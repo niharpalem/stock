@@ -9,69 +9,68 @@ def load_data(ticker, start_date, end_date):
     return data
 
 def is_valid_ticker(ticker):
-    # Try to fetch a small amount of data
     data = yf.download(ticker, period='1d', interval='1m')
-    # If the data is empty, the ticker is probably invalid
     return not data.empty
 
+def calculate_daily_return(data):
+    return (data['Close'] / data['Close'].shift(1)) - 1
+
+def calculate_volatility(data, period):
+    daily_return = calculate_daily_return(data)
+    return daily_return.rolling(window=period).std()
+
+def calculate_moving_average(data, period):
+    return data['Close'].rolling(window=period).mean()
+
+def calculate_ema(data, span=20):
+    return data['Close'].ewm(span=span, adjust=False).mean()
+
+def calculate_macd(data):
+    exp1 = data['Close'].ewm(span=12, adjust=False).mean()
+    exp2 = data['Close'].ewm(span=26, adjust=False).mean()
+    macd = exp1 - exp2
+    signal = macd.ewm(span=9, adjust=False).mean()
+    return macd - signal
+
+def calculate_rsi(data, period=14):
+    delta = data['Close'].diff()
+    up = delta.clip(lower=0)
+    down = -1 * delta.clip(upper=0)
+    ema_up = up.ewm(com=period-1, adjust=False).mean()
+    ema_down = down.ewm(com=period-1, adjust=False).mean()
+    rs = ema_up / ema_down
+    return 100 - (100 / (1 + rs))
+
+# Streamlit UI code
 st.title('Stock Data App')
-
-# User enters a list of ticker symbols, separated by commas
 tickers = st.text_input('Enter ticker symbols (e.g. AAPL,MSFT), separated by commas:')
-
 start_date = st.date_input('Start date')
 end_date = st.date_input('End date')
 
 formulas = st.multiselect('Select formulas to apply', ['Daily Return', 'Moving Average', 'Volatility', 'Exponential Moving Average', 'MACD', 'RSI'])
 
-# Add options to select the time period for Moving Average and Volatility
+# Additional UI elements for selecting periods
 ma_period = st.sidebar.slider('Moving Average Period', min_value=1, max_value=30, value=5, step=1)
 vol_period = st.sidebar.slider('Volatility Period', min_value=1, max_value=30, value=5, step=1)
 
-# Add explanations for each calculation
-explanations = {
-    'Daily Return': 'The daily return is the percentage change in the closing price from one day to the next. It\'s a measure of the profitability of the investment.',
-    'Moving Average': 'The moving average is the average closing price over a certain number of days. It\'s used to analyze price trends by smoothing out price fluctuations.',
-    'Volatility': 'The volatility is the standard deviation of the daily returns over a certain number of days. It\'s a measure of the riskiness of the stock.',
-    'Exponential Moving Average': 'The exponential moving average is a type of moving average that gives more weight to recent prices, making it more responsive to new information.',
-    'MACD': 'The Moving Average Convergence Divergence (MACD) is a trend-following momentum indicator that shows the relationship between two moving averages of a security’s price.',
-    'RSI': 'The Relative Strength Index (RSI) is a momentum indicator used in technical analysis that measures the magnitude of recent price changes to evaluate overbought or oversold conditions in the price of a stock or other asset.'
-}
 if tickers and st.button('Fetch Data'):
     tickers = [ticker.strip() for ticker in tickers.split(',')]
     for ticker in tickers:
-        if end_date == date.today():
-            st.warning('Today\'s data for {} may not be available yet.'.format(ticker))
-        elif is_valid_ticker(ticker):
+        if is_valid_ticker(ticker):
             data = load_data(ticker, start_date, end_date)
-            st.write('Data for {}:'.format(ticker))
-            for formula in formulas:
-                if formula == 'Daily Return':
-                    data['Daily Return'] = (data['Close'] / data['Close'].shift(1)) - 1
-                if formula == 'Volatility':
-                    # Ensure 'Daily Return' is calculated before 'Volatility'
-                    if 'Daily Return' not in data.columns:
-                        data['Daily Return'] = (data['Close'] / data['Close'].shift(1)) - 1
-                    data['Volatility'] = data['Daily Return'].rolling(window=vol_period).std()
-                if formula == 'Moving Average':
-                    data['Moving Average'] = data['Close'].rolling(window=ma_period).mean()
-                if formula == 'Exponential Moving Average':
-                    data['EMA'] = data['Close'].ewm(span=20, adjust=False).mean()
-                if formula == 'MACD':
-                    exp1 = data['Close'].ewm(span=12, adjust=False).mean()
-                    exp2 = data['Close'].ewm(span=26, adjust=False).mean()
-                    macd = exp1-exp2
-                    signal = macd.ewm(span=9, adjust=False).mean()
-                    data['MACD'] = macd - signal
-                if formula == 'RSI':
-                    delta = data['Close'].diff()
-                    up = delta.clip(lower=0)
-                    down = -1*delta.clip(upper=0)
-                    ema_up = up.ewm(com=13, adjust=False).mean()
-                    ema_down = down.ewm(com=13, adjust=False).mean()
-                    rs = ema_up/ema_down
-                    data['RSI'] = 100 - (100/(1 + rs))
-                st.markdown('**{}**: {}'.format(formula, explanations[formula]))
-            st.dataframe(data)  # Display data as a table
+            st.write(f'Data for {ticker}:')
+            if 'Daily Return' in formulas:
+                data['Daily Return'] = calculate_daily_return(data)
+            if 'Volatility' in formulas:
+                data['Volatility'] = calculate_volatility(data, vol_period)
+            if 'Moving Average' in formulas:
+                data['Moving Average'] = calculate_moving_average(data, ma_period)
+            if 'Exponential Moving Average' in formulas:
+                data['EMA'] = calculate_ema(data)
+            if 'MACD' in formulas:
+                data['MACD'] = calculate_macd(data)
+            if 'RSI' in formulas:
+                data['RSI'] = calculate_rsi(data)
+            st.dataframe(data)
         else:
-            st.error('Invalid ticker symbol: {}. Please enter a valid ticker symbol.'.format(ticker))
+            st.error(f'Invalid ticker symbol: {ticker}. Please enter a valid ticker symbol.')
